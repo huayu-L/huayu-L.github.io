@@ -1,0 +1,21 @@
+{
+  "note": "Fallback directory used only when the GitHub API cannot be reached. The website normally discovers Markdown files in notes/ automatically. You do not need to edit this file after adding a note.",
+  "posts": [
+    {
+      "path": "welcome.md",
+      "title": "写在开始",
+      "date": "2026-10-27",
+      "tags": ["开始", "关于"],
+      "description": "这是这个博客的第一篇笔记。一个安静的角落，从这里开始。",
+      "minutes": 2
+    },
+    {
+      "path": "markdown-guide.md",
+      "title": "Markdown 写作小抄",
+      "date": "2026-10-24",
+      "tags": ["Markdown", "指南"],
+      "description": "一份给这个博客准备的 Markdown 速查笔记，也顺便展示页面里的各种排版样式。",
+      "minutes": 3
+    }
+  ]
+}
