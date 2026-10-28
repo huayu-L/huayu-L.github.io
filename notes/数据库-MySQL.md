@@ -1,3 +1,12 @@
+---
+title: MySQL笔记
+date: 2026-10-28
+tags:
+  - 笔记
+  - 编程
+description: 这是自己学习MySQL的笔记，记录了基本的MySQL用法
+---
+
 # 数据库（MySQL）
 
 ## 第一章	数据库系统概述
