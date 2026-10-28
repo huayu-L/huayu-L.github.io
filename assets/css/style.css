@@ -2395,8 +2395,58 @@ p {
   display: none;
 }
 
+/* Mermaid diagrams sit on a light plate in both themes, so diagrams
+   with author-defined light node colours stay readable. */
+
+.mermaid-block {
+  margin: 2.2em 0;
+  padding: clamp(18px, 3.2vw, 30px);
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #fbf8f1;
+  box-shadow: var(--shadow-sm);
+}
+
+[data-theme="dark"] .mermaid-block {
+  border-color: rgba(233, 228, 216, 0.16);
+  background: #f1ece2;
+}
+
+.mermaid-canvas {
+  display: flex;
+  justify-content: center;
+  min-height: 72px;
+}
+
+.mermaid-block[data-mermaid-state="error"] .mermaid-canvas {
+  display: none;
+}
+
+.mermaid-canvas svg {
+  max-width: 100%;
+  height: auto;
+}
+
+.mermaid-pending {
+  align-self: center;
+  color: #6c6f66;
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
 .prose .mermaid-error {
-  color: var(--accent);
+  margin: 0 0 1em;
+  color: #843c28;
+  font-size: 0.82rem;
+  text-align: left;
+}
+
+.prose .mermaid-block pre {
+  margin: 0;
+  text-align: left;
 }
 
 /* Code highlighting — tuned for the site palette */

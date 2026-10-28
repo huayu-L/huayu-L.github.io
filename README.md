@@ -4,7 +4,7 @@
 
 - 没有构建步骤，推送到 `main` 分支即可发布。
 - 把 Markdown 文件放进 `notes/` 文件夹，网站会自动发现并展示。
-- 支持深色模式、全文搜索、标签筛选、文章目录、代码高亮和阅读进度。
+- 支持深色模式、全文搜索、标签筛选、文章目录、代码高亮、Mermaid 图表和阅读进度。
 - Markdown 解析、语法高亮等依赖已经放在本地，不依赖外部 CDN。
 
 ## 写一篇新笔记
@@ -65,5 +65,6 @@ GitHub API 无法访问时，会使用 `notes/_index.json` 作为后备目录。
 - Markdown：[marked](https://github.com/markedjs/marked)（本地文件）
 - HTML 安全过滤：[DOMPurify](https://github.com/cure53/DOMPurify)（本地文件）
 - 代码高亮：[highlight.js](https://highlightjs.org/)（本地文件）
+- 图表渲染：[Mermaid](https://mermaid.js.org/)（本地文件，仅在笔记包含图表时加载）
 - 字体使用系统字体，不加载外部资源
 - 所有依赖许可证位于 `assets/vendor/`

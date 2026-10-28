@@ -13,6 +13,7 @@
     branch: 'main',
     notesDir: 'notes',
     manifestPath: 'notes/_index.json',
+    mermaidPath: 'assets/vendor/mermaid.min.js',
     github: 'https://github.com/huayu-L',
     since: 2026,
     cacheKey: 'huayu:notes-index:v2',
@@ -38,6 +39,13 @@
   };
 
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  const mermaidRuntime = {
+    promise: null,
+    blocks: [],
+    renderToken: 0,
+    renderSeq: 0
+  };
 
   /* ---------- Boot ---------- */
 
@@ -849,6 +857,8 @@
 
   function renderRoute() {
     state.routeToken += 1;
+    mermaidRuntime.renderToken += 1;
+    mermaidRuntime.blocks = [];
     const token = state.routeToken;
     const route = parseRoute();
     state.currentRoute = route;
@@ -1496,6 +1506,7 @@
     processImages(root, post);
     processTables(root);
     processCodeBlocks(root);
+    renderMermaid(root);
   }
 
   function addHeadingIds(root) {
@@ -1605,6 +1616,10 @@
         return name.indexOf('language-') === 0;
       });
       if (languageClass) language = languageClass.slice('language-'.length) || 'code';
+
+      // Mermaid fences are replaced by rendered diagrams later.
+      if (language === 'mermaid') return;
+
       pre.setAttribute('data-language', language);
 
       if (window.hljs && languageClass) {
@@ -1634,6 +1649,163 @@
       });
       pre.appendChild(button);
     });
+  }
+
+  /* ---------- Mermaid diagrams ---------- */
+
+  function loadMermaid() {
+    if (window.mermaid) return Promise.resolve(window.mermaid);
+    if (mermaidRuntime.promise) return mermaidRuntime.promise;
+
+    mermaidRuntime.promise = new Promise(function (resolve, reject) {
+      const script = document.createElement('script');
+      script.src = CONFIG.mermaidPath;
+      script.async = true;
+      script.onload = function () {
+        if (window.mermaid) resolve(window.mermaid);
+        else reject(new Error('Mermaid did not register itself'));
+      };
+      script.onerror = function () {
+        reject(new Error('Mermaid could not be loaded'));
+      };
+      document.head.appendChild(script);
+    }).catch(function (error) {
+      mermaidRuntime.promise = null;
+      throw error;
+    });
+
+    return mermaidRuntime.promise;
+  }
+
+  function renderMermaid(root) {
+    const codeBlocks = Array.prototype.slice.call(root.querySelectorAll('pre > code.language-mermaid'));
+
+    mermaidRuntime.blocks = [];
+    mermaidRuntime.renderToken += 1;
+
+    if (!codeBlocks.length) return;
+
+    mermaidRuntime.blocks = codeBlocks.map(function (code) {
+      const pre = code.parentElement;
+      const figure = document.createElement('figure');
+      figure.className = 'mermaid-block';
+      figure.setAttribute('data-mermaid-state', 'loading');
+
+      const canvas = document.createElement('div');
+      canvas.className = 'mermaid-canvas';
+      canvas.innerHTML = '<span class="mermaid-pending">正在绘制图表…</span>';
+
+      figure.appendChild(canvas);
+      pre.parentNode.replaceChild(figure, pre);
+
+      return {
+        figure: figure,
+        canvas: canvas,
+        source: code.textContent.replace(/\s+$/, '')
+      };
+    });
+
+    drawMermaidBlocks().catch(function (error) {
+      console.warn('[Huayu] Mermaid rendering stopped:', error);
+    });
+  }
+
+  async function drawMermaidBlocks() {
+    if (!mermaidRuntime.blocks.length) return;
+
+    const token = mermaidRuntime.renderToken;
+    let mermaid;
+
+    try {
+      mermaid = await loadMermaid();
+    } catch (error) {
+      if (token === mermaidRuntime.renderToken) {
+        mermaidRuntime.blocks.forEach(function (block) {
+          showMermaidFallback(block, '图表库没有成功载入');
+        });
+      }
+      return;
+    }
+
+    if (token !== mermaidRuntime.renderToken) return;
+
+    try {
+      mermaid.initialize({
+        startOnLoad: false,
+        securityLevel: 'strict',
+        suppressErrorRendering: true,
+        theme: 'base',
+        fontFamily: '"Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", sans-serif',
+        themeVariables: {
+          background: 'transparent',
+          primaryColor: '#f8f4ea',
+          primaryTextColor: '#20241f',
+          primaryBorderColor: '#a34d35',
+          secondaryColor: '#efe9dd',
+          tertiaryColor: '#f4f0e8',
+          lineColor: '#5f625a',
+          textColor: '#20241f',
+          fontSize: '15px'
+        },
+        flowchart: {
+          curve: 'basis',
+          padding: 16,
+          useMaxWidth: true
+        }
+      });
+    } catch (error) {
+      if (token === mermaidRuntime.renderToken) {
+        mermaidRuntime.blocks.forEach(function (block) {
+          showMermaidFallback(block, '图表库没有成功初始化');
+        });
+      }
+      return;
+    }
+
+    for (let i = 0; i < mermaidRuntime.blocks.length; i += 1) {
+      const block = mermaidRuntime.blocks[i];
+      if (token !== mermaidRuntime.renderToken || !document.contains(block.figure)) return;
+
+      mermaidRuntime.renderSeq += 1;
+      const id = 'huayu-mermaid-' + mermaidRuntime.renderSeq;
+
+      try {
+        const result = await mermaid.render(id, block.source);
+        if (token !== mermaidRuntime.renderToken) return;
+
+        block.canvas.innerHTML = result.svg;
+        const svg = block.canvas.querySelector('svg');
+        if (svg) svg.setAttribute('role', 'img');
+        if (typeof result.bindFunctions === 'function') result.bindFunctions(block.canvas);
+        block.figure.setAttribute('data-mermaid-state', 'ready');
+      } catch (error) {
+        if (token !== mermaidRuntime.renderToken) return;
+        console.warn('[Huayu] Mermaid diagram could not be rendered:', error);
+        showMermaidFallback(block, '这张图暂时没能画出来');
+      }
+    }
+  }
+
+  function showMermaidFallback(block, message) {
+    if (!block || block.figure.getAttribute('data-mermaid-state') === 'error') return;
+
+    block.figure.setAttribute('data-mermaid-state', 'error');
+
+    const notice = document.createElement('p');
+    notice.className = 'mermaid-error';
+    notice.textContent = message + '，下面是原始 Mermaid 代码。';
+
+    const pre = document.createElement('pre');
+    pre.className = 'mermaid-source';
+    pre.setAttribute('data-language', 'mermaid');
+    const code = document.createElement('code');
+    code.className = 'language-mermaid';
+    code.textContent = block.source;
+    pre.appendChild(code);
+
+    block.canvas.hidden = true;
+    block.figure.appendChild(notice);
+    block.figure.appendChild(pre);
   }
 
   function copyText(text) {
