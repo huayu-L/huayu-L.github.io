@@ -58,6 +58,22 @@ notes/
 
 如果笔记在子文件夹里，也可以使用相对于这篇笔记的路径，例如 `../images/photo.jpg`。
 
+## 代码高亮
+
+在代码块开头的语言标记决定了高亮的语法。站点内置了 highlight.js 的常用语言，例如 `java`、`js`、`python`、`bash`、`sql`、`yaml`：
+
+````markdown
+```java
+System.out.println("Hello, world!");
+```
+
+```cmd
+dir /b
+```
+````
+
+`mysql`、`mariadb`、`sqlite`、`postgresql` 会按 SQL 语法着色，`cmd`、`bat`、`batch` 会按 Windows 批处理语法着色，因此笔记里的 MySQL 和命令行片段都能直接上色。
+
 ## 插入 Mermaid 图表
 
 用 `mermaid` 作为代码块的语言标记，网站会自动把代码绘制成图表：

@@ -38,6 +38,27 @@
     contentCache: new Map()
   };
 
+  // highlight.js here is the "common" build, which has no grammar for these
+  // fence labels. Map them onto the closest bundled grammar so that notes
+  // written with ```mysql / ```cmd still get syntax colours.
+  const HIGHLIGHT_ALIASES = {
+    mysql: 'sql',
+    mariadb: 'sql',
+    sqlite: 'sql',
+    sqlite3: 'sql',
+    postgres: 'sql',
+    postgresql: 'sql',
+    pgsql: 'sql',
+    plsql: 'sql',
+    tsql: 'sql',
+    mssql: 'sql',
+    cmd: 'dos',
+    bat: 'dos',
+    batch: 'dos',
+    dosbatch: 'dos',
+    jsonc: 'json'
+  };
+
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   const mermaidRuntime = {
@@ -1606,6 +1627,18 @@
     });
   }
 
+  function resolveHighlightLanguage(language) {
+    if (!window.hljs) return null;
+
+    const name = String(language || '').toLowerCase();
+    if (window.hljs.getLanguage(name)) return name;
+
+    const alias = HIGHLIGHT_ALIASES[name];
+    if (alias && window.hljs.getLanguage(alias)) return alias;
+
+    return null;
+  }
+
   function processCodeBlocks(root) {
     root.querySelectorAll('pre').forEach(function (pre) {
       const code = pre.querySelector('code');
@@ -1623,10 +1656,17 @@
       pre.setAttribute('data-language', language);
 
       if (window.hljs && languageClass) {
-        try {
-          window.hljs.highlightElement(code);
-        } catch (_) {
-          // Highlighting is a progressive enhancement.
+        const highlightLanguage = resolveHighlightLanguage(language);
+        if (highlightLanguage && highlightLanguage !== language.toLowerCase()) {
+          code.classList.remove(languageClass);
+          code.classList.add('language-' + highlightLanguage);
+        }
+        if (highlightLanguage) {
+          try {
+            window.hljs.highlightElement(code);
+          } catch (_) {
+            // Highlighting is a progressive enhancement.
+          }
         }
       }
 
